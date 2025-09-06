@@ -31,13 +31,12 @@ def exponential_backoff_sleep(retry_count):
     time.sleep(sleep_time)
 
 
-def get_folder_contents(folder_id, shared_drive_id=None, max_retries=7):
+def get_folder_contents(folder_id, max_retries=7):
     """
     Lists all items in Google Drive folder.
 
     parameters:
       - folder_id (str): ID of Google Drive folder for creating directory
-      - shared_drive_id (str): if folder is located in Google Shared Drive, the ID of that drive must be provided.
       -max_retries (int; default 7): max number of retries after failed API calls.
 
     returns:
@@ -116,20 +115,18 @@ def create_share_link(item):
     return link
 
 
-def get_metadata(folder_id, parent_path, metadata_rows, shared_drive_id=None):
+def get_metadata(folder_id, parent_path, metadata_rows):
     """
     Top-level function, calling on get_folder_contents to get
     """
-    contents = get_folder_contents(folder_id, shared_drive_id=shared_drive_id)
+    contents = get_folder_contents(folder_id)
     for item in contents:
         item_path = os.path.join(parent_path, item["name"])
         item["path"] = item_path
         item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
-            get_metadata(
-                item["id"], item_path, metadata_rows, shared_drive_id=shared_drive_id
-            )
+            get_metadata(item["id"], item_path, metadata_rows)
 
 
 def write_csv(metadata_rows, csv_file_path):
@@ -154,28 +151,17 @@ def write_csv(metadata_rows, csv_file_path):
         writer.writerows(metadata_rows)
 
 
-def get_shared_drive_id(file_id):
-    file = (
-        service.files()
-        .get(fileId=file_id, fields="id, name, driveId", supportsAllDrives=True)
-        .execute()
-    )
-
-    return file.get("driveId")
-
-
 if __name__ == "__main__":
     # Set folder id and name for directory
     root_folder_id = os.getenv("ROOT_FOLDER_ID")
     root_folder_name = os.getenv("ROOT_FOLDER_NAME")
-    root_drive_id = get_shared_drive_id(root_folder_id)
 
     # Establish CSV path, call traversal function, and create CSV
     csv_path = os.path.join("directories", f"{root_folder_name}_directory.csv")
     metadata_rows = []
     print("Processing Google Drive structure. This may take a while for large trees...")
     try:
-        get_metadata(root_folder_id, root_folder_name, metadata_rows, root_drive_id)
+        get_metadata(root_folder_id, root_folder_name, metadata_rows)
         write_csv(metadata_rows, csv_path)
     except Exception as e:
         print(f"Aborted due to error: {e}")
