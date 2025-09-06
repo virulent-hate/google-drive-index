@@ -1,10 +1,13 @@
 import os
 import time
 import random
+import csv
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
-import csv
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 # Google Drive API settings
 SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
@@ -131,8 +134,8 @@ def get_shared_drive_id(file_id):
 
 if __name__ == "__main__":
     # Set folder id and name for directory
-    root_folder_id = "1Z0WnYjm15cP6a3BN79V3oZjL9dFTeiag"
-    root_folder_name = "JakeGibson_2"
+    root_folder_id = os.getenv("ROOT_FOLDER_ID")
+    root_folder_name = os.getenv("ROOT_FOLDER_NAME")
     root_drive_id = get_shared_drive_id(root_folder_id)
 
     # Establish CSV path, call traversal function, and create CSV
