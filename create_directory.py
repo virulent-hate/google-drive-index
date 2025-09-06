@@ -31,6 +31,7 @@ def get_folder_contents(folder_id):
         for f in files:
             is_folder = f["mimeType"] == "application/vnd.google-apps.folder"
             size = int(f["size"]) if "size" in f else 0
+            size_kb = round(size / 1024, 2) if not is_folder else 0
             owner = f.get("owners", [{}])[0].get("displayName", "")
             items.append(
                 {
@@ -38,7 +39,7 @@ def get_folder_contents(folder_id):
                     "name": f["name"],
                     "type": f["mimeType"],
                     "is_folder": is_folder,
-                    "size": size,
+                    "size_kb": size_kb,
                     "owner": owner,
                     "created_date": f.get("createdTime", ""),
                     "last_modified_date": f.get("modifiedTime", ""),
@@ -50,28 +51,13 @@ def get_folder_contents(folder_id):
     return items
 
 
-def gather_metadata(item, current_path):
-    size_kb = (
-        round(item.get("size", 0) / 1024, 2) if not item.get("is_folder", False) else 0
-    )
-    return {
-        "name": item["name"],
-        "path": current_path,
-        "id": item["id"],
-        "type": item["type"],
-        "size_kb": size_kb,
-        "owner": item.get("owner", ""),
-        "created_date": item.get("created_date", ""),
-        "last_modified_date": item.get("last_modified_date", ""),
-    }
-
-
 def traverse_and_create(folder_id, parent_path, metadata_rows):
     contents = get_folder_contents(folder_id)
     for item in contents:
         # Create a directory for every item (file or folder)
         item_path = os.path.join(parent_path, item["name"])
-        metadata_rows.append(gather_metadata(item, item_path))
+        item["path"] = item_path
+        metadata_rows.append(item)
         if item.get("is_folder", False):
             # Recursively process subfolders
             traverse_and_create(item["id"], item_path, metadata_rows)
@@ -85,6 +71,7 @@ def write_csv(metadata_rows, csv_file_path):
         "path",
         "id",
         "type",
+        "is_folder",
         "size_kb",
         "owner",
         "created_date",
