@@ -31,6 +31,24 @@ def exponential_backoff_sleep(retry_count):
     time.sleep(sleep_time)
 
 
+def create_share_link(id, is_folder):
+    """
+    Creates a shareable link to each file or folder using Google Drive's standard link format.
+
+    parameters:
+      - id (str): Google Drive ID of file or folder.
+      - is_folder (bool)
+
+    returns:
+      - link (str): URL for Google Drive file/folder
+    """
+    if is_folder:
+        link = f"https://drive.google.com/drive/folders/{id}?usp=drivesdk"
+    else:
+        link = f"https://drive.google.com/file/d/{id}?usp=drivesdk"
+    return link
+
+
 def get_folder_metadata(folder_id, max_retries=7):
     """
     Lists all items in Google Drive folder.
@@ -79,10 +97,12 @@ def get_folder_metadata(folder_id, max_retries=7):
             size = int(f["size"]) if "size" in f else 0
             size_kb = round(size / 1024, 2) if not is_folder else 0
             owner = f.get("owners", [{}])[0].get("displayName", "")
+            link = create_share_link(f["id"], is_folder)
             items.append(
                 {
                     "id": f["id"],
                     "name": f["name"],
+                    "link": link,
                     "type": f["mimeType"],
                     "is_folder": is_folder,
                     "size_kb": size_kb,
@@ -95,41 +115,36 @@ def get_folder_metadata(folder_id, max_retries=7):
         page_token = results.get("nextPageToken", None)
         if not page_token:
             break
+
     return items
-
-
-def create_share_link(item):
-    """
-    Creates a shareable link to each file or folder using Google Drive's standard link format.
-
-    parameters:
-      - item (dict): item containing (at minimum) "is_folder" (bool) and a Google Drive ID.
-
-    returns:
-      - link (str): URL for Google Drive file/folder
-    """
-    if item["is_folder"]:
-        link = f"https://drive.google.com/drive/folders/{item['id']}?usp=drivesdk"
-    else:
-        link = f"https://drive.google.com/file/d/{item['id']}?usp=drivesdk"
-    return link
 
 
 def traverse_folder(folder_id, parent_path, metadata_rows):
     """
-    Top-level function, calling on get_folder_contents to get
+    Calls get_folder_metadata function for root folder, appending file/folder metadata to metadata_rows. If additional folders are present, recursively calls traverse_folder until only files are contained in the directory.
+
+    parameters:
+      - folder_id (str): Google Drive folder id
+      - parent_path (str): root folder name
+      - metadata_rows (list): list for appending file/folder metadata
     """
     contents = get_folder_metadata(folder_id)
     for item in contents:
-        item_path = os.path.join(parent_path, item["name"])
+        item_path = os.path.join(parent_path, item["name"])  # Create path for folder
         item["path"] = item_path
-        item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
             traverse_folder(item["id"], item_path, metadata_rows)
 
 
 def write_csv(metadata_rows, csv_file_path):
+    """
+    Writes Google Drive metadata to CSV file.
+
+    parameters:
+        - metadata_rows (list): list of dictionaries with with metadata.
+        - csv_file_path (os.path): path to csv output destination
+    """
     if not metadata_rows:
         return
     os.makedirs(os.path.dirname(csv_file_path), exist_ok=True)
@@ -152,20 +167,22 @@ def write_csv(metadata_rows, csv_file_path):
 
 
 if __name__ == "__main__":
-    # Set folder id and name for directory
-    root_folder_id = os.getenv("ROOT_FOLDER_ID")
-    root_folder_name = os.getenv("ROOT_FOLDER_NAME")
-
-    # Establish CSV path, call traversal function, and create CSV
+    # Import and initialize variables
+    root_folder_id = os.getenv("ROOT_FOLDER_ID")  # adjust in .env file
+    root_folder_name = os.getenv("ROOT_FOLDER_NAME")  # adjust in .env file
     csv_path = os.path.join("directories", f"{root_folder_name}_directory.csv")
     metadata_rows = []
-    print("Processing Google Drive structure. This may take a while for large trees...")
+
+    print(
+        f"\nProcessing Google Drive structure. This may take a while for large trees...\n"
+    )
+
     try:
         traverse_folder(root_folder_id, root_folder_name, metadata_rows)
         write_csv(metadata_rows, csv_path)
     except Exception as e:
-        print(f"Aborted due to error: {e}")
+        print(f"\nAborted due to error: {e}\n")
     else:
         print(
-            f"Process complete. Directory structure at {root_folder_name}, metadata saved to {csv_path}."
+            f"\nProcess complete. Directory structure at {root_folder_name}, metadata saved to {csv_path}.\n"
         )
