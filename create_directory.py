@@ -1,4 +1,6 @@
 import os
+import time
+import random
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
@@ -13,20 +15,45 @@ creds = Credentials.from_authorized_user_file("token.json", SCOPES)
 service = build("drive", "v3", credentials=creds)
 
 
-def get_folder_contents(folder_id):
+def exponential_backoff_sleep(retry_count):
+    # Exponential backoff with jitter (see Google best practices)
+    # e.g., sleep random time between 0 and 2^retry_count seconds (max 64 seconds)
+    max_sleep = min(2**retry_count, 64)
+    sleep_time = random.uniform(0, max_sleep)
+    print(f"Rate limited. Sleeping for {sleep_time:.2f} seconds before retry...")
+    time.sleep(sleep_time)
+
+
+def get_folder_contents(folder_id, max_retries=7):
     items = []
     page_token = None
     while True:
-        results = (
-            service.files()
-            .list(
-                q=f"'{folder_id}' in parents and trashed=false",
-                pageSize=1000,
-                fields="nextPageToken, files(id, name, mimeType, size, owners, createdTime, modifiedTime)",
-                pageToken=page_token,
+        for attempt in range(max_retries):
+            try:
+                results = (
+                    service.files()
+                    .list(
+                        q=f"'{folder_id}' in parents and trashed=false",
+                        pageSize=1000,
+                        fields="nextPageToken, files(id, name, mimeType, size, owners, createdTime, modifiedTime)",
+                        pageToken=page_token,
+                    )
+                    .execute()
+                )
+                break  # Success, exit retry loop
+            except HttpError as e:
+                if e.resp.status == 429:
+                    exponential_backoff_sleep(attempt)
+                    continue  # Retry after backoff
+                else:
+                    print(f"Unhandled HttpError: {e}")
+                    raise  # Reraise other errors
+        else:
+            # We exhausted retries
+            raise RuntimeError(
+                f"Exceeded maximum retries for folder {folder_id} (rate limit)."
             )
-            .execute()
-        )
+
         files = results.get("files", [])
         for f in files:
             is_folder = f["mimeType"] == "application/vnd.google-apps.folder"
@@ -53,32 +80,27 @@ def get_folder_contents(folder_id):
 
 def create_share_link(item):
     if item["is_folder"]:
-        link = "".join(
-            ["https://drive.google.com/drive/folders/", item["id"], "?usp=drivesdk"]
-        )
+        link = f"https://drive.google.com/drive/folders/{item['id']}?usp=drivesdk"
     else:
-        link = "".join(
-            ["https://drive.google.com/file/d/", item["id"], "?usp=drivesdk"]
-        )
+        link = f"https://drive.google.com/file/d/{item['id']}?usp=drivesdk"
     return link
 
 
 def traverse_and_create(folder_id, parent_path, metadata_rows):
     contents = get_folder_contents(folder_id)
     for item in contents:
-        # Create a directory for every item (file or folder)
         item_path = os.path.join(parent_path, item["name"])
         item["path"] = item_path
         item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
-            # Recursively process subfolders
             traverse_and_create(item["id"], item_path, metadata_rows)
 
 
 def write_csv(metadata_rows, csv_file_path):
     if not metadata_rows:
         return
+    os.makedirs(os.path.dirname(csv_file_path), exist_ok=True)
     fieldnames = [
         "name",
         "path",
@@ -106,8 +128,12 @@ if __name__ == "__main__":
     csv_path = os.path.join("directories", f"{root_folder_name}_directory.csv")
     metadata_rows = []
     print("Processing Google Drive structure. This may take a while for large trees...")
-    traverse_and_create(root_folder_id, root_folder_name, metadata_rows)
-    write_csv(metadata_rows, csv_path)
-    print(
-        f"Process complete. Directory structure at {root_folder_name}, metadata saved to {csv_path}."
-    )
+    try:
+        traverse_and_create(root_folder_id, root_folder_name, metadata_rows)
+        write_csv(metadata_rows, csv_path)
+    except Exception as e:
+        print(f"Aborted due to error: {e}")
+    else:
+        print(
+            f"Process complete. Directory structure at {root_folder_name}, metadata saved to {csv_path}."
+        )
