@@ -13,6 +13,18 @@ creds = Credentials.from_authorized_user_file("token.json", SCOPES)
 service = build("drive", "v3", credentials=creds)
 
 
+def create_share_link(item):
+    if item["is_folder"]:
+        link = "".join(
+            ["https://drive.google.com/drive/folders/", item["id"], "?usp=drivesdk"]
+        )
+    else:
+        link = "".join(
+            ["https://drive.google.com/file/d/", item["id"], "?usp=drivesdk"]
+        )
+    return link
+
+
 def get_folder_contents(folder_id):
     items = []
     page_token = None
@@ -57,6 +69,7 @@ def traverse_and_create(folder_id, parent_path, metadata_rows):
         # Create a directory for every item (file or folder)
         item_path = os.path.join(parent_path, item["name"])
         item["path"] = item_path
+        item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
             # Recursively process subfolders
@@ -70,6 +83,7 @@ def write_csv(metadata_rows, csv_file_path):
         "name",
         "path",
         "id",
+        "link",
         "type",
         "is_folder",
         "size_kb",
