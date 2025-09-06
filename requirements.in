@@ -1,6 +1,6 @@
-pip-tools==7.5.0
-pandas==2.3.2
-python-dotenv==1.1.1
+pip-tools
+pandas
+python-dotenv
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
