@@ -31,7 +31,7 @@ def exponential_backoff_sleep(retry_count):
     time.sleep(sleep_time)
 
 
-def get_folder_contents(folder_id, max_retries=7):
+def get_folder_metadata(folder_id, max_retries=7):
     """
     Lists all items in Google Drive folder.
 
@@ -115,18 +115,18 @@ def create_share_link(item):
     return link
 
 
-def get_metadata(folder_id, parent_path, metadata_rows):
+def traverse_folder(folder_id, parent_path, metadata_rows):
     """
     Top-level function, calling on get_folder_contents to get
     """
-    contents = get_folder_contents(folder_id)
+    contents = get_folder_metadata(folder_id)
     for item in contents:
         item_path = os.path.join(parent_path, item["name"])
         item["path"] = item_path
         item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
-            get_metadata(item["id"], item_path, metadata_rows)
+            traverse_folder(item["id"], item_path, metadata_rows)
 
 
 def write_csv(metadata_rows, csv_file_path):
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     metadata_rows = []
     print("Processing Google Drive structure. This may take a while for large trees...")
     try:
-        get_metadata(root_folder_id, root_folder_name, metadata_rows)
+        traverse_folder(root_folder_id, root_folder_name, metadata_rows)
         write_csv(metadata_rows, csv_path)
     except Exception as e:
         print(f"Aborted due to error: {e}")
