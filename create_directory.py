@@ -24,32 +24,32 @@ def exponential_backoff_sleep(retry_count):
     time.sleep(sleep_time)
 
 
-def get_folder_contents(folder_id, max_retries=7):
+def get_folder_contents(folder_id, drive_id=None, max_retries=7):
     items = []
     page_token = None
     while True:
         for attempt in range(max_retries):
             try:
-                results = (
-                    service.files()
-                    .list(
-                        q=f"'{folder_id}' in parents and trashed=false",
-                        pageSize=1000,
-                        fields="nextPageToken, files(id, name, mimeType, size, owners, createdTime, modifiedTime)",
-                        pageToken=page_token,
-                    )
-                    .execute()
+                call = service.files().list(
+                    q=f"'{folder_id}' in parents and trashed=false",
+                    pageSize=1000,
+                    fields="nextPageToken, files(id, name, mimeType, size, owners, createdTime, modifiedTime)",
+                    pageToken=page_token,
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True,
                 )
-                break  # Success, exit retry loop
+                if drive_id:
+                    call = call  # Google API handles driveId in search with q and folder_id, but for 'root' traversal you may need to specify
+                results = call.execute()
+                break
             except HttpError as e:
                 if e.resp.status == 429:
                     exponential_backoff_sleep(attempt)
-                    continue  # Retry after backoff
+                    continue
                 else:
                     print(f"Unhandled HttpError: {e}")
-                    raise  # Reraise other errors
+                    raise
         else:
-            # We exhausted retries
             raise RuntimeError(
                 f"Exceeded maximum retries for folder {folder_id} (rate limit)."
             )
@@ -86,15 +86,15 @@ def create_share_link(item):
     return link
 
 
-def traverse_and_create(folder_id, parent_path, metadata_rows):
-    contents = get_folder_contents(folder_id)
+def traverse_and_create(folder_id, parent_path, metadata_rows, drive_id=None):
+    contents = get_folder_contents(folder_id, drive_id=drive_id)
     for item in contents:
         item_path = os.path.join(parent_path, item["name"])
         item["path"] = item_path
         item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
-            traverse_and_create(item["id"], item_path, metadata_rows)
+            traverse_and_create(item["id"], item_path, metadata_rows, drive_id=drive_id)
 
 
 def write_csv(metadata_rows, csv_file_path):
@@ -119,17 +119,30 @@ def write_csv(metadata_rows, csv_file_path):
         writer.writerows(metadata_rows)
 
 
+def get_shared_drive_id(file_id):
+    file = (
+        service.files()
+        .get(fileId=file_id, fields="id, name, driveId", supportsAllDrives=True)
+        .execute()
+    )
+
+    return file.get("driveId")
+
+
 if __name__ == "__main__":
     # Set folder id and name for directory
-    root_folder_id = "1k-_alN-wNT1nSiMPXFdR5MHLmyHEhHUC"
-    root_folder_name = "NewsBank_2021-01-24_2021-01-30"
+    root_folder_id = "1Z0WnYjm15cP6a3BN79V3oZjL9dFTeiag"
+    root_folder_name = "JakeGibson_2"
+    root_drive_id = get_shared_drive_id(root_folder_id)
 
     # Establish CSV path, call traversal function, and create CSV
     csv_path = os.path.join("directories", f"{root_folder_name}_directory.csv")
     metadata_rows = []
     print("Processing Google Drive structure. This may take a while for large trees...")
     try:
-        traverse_and_create(root_folder_id, root_folder_name, metadata_rows)
+        traverse_and_create(
+            root_folder_id, root_folder_name, metadata_rows, root_drive_id
+        )
         write_csv(metadata_rows, csv_path)
     except Exception as e:
         print(f"Aborted due to error: {e}")
