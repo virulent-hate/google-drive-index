@@ -208,3 +208,6 @@ __marimo__/
 
 # py-env
 .python-version
+
+#MacOS
+.DS_Store
