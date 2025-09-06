@@ -19,8 +19,11 @@ service = build("drive", "v3", credentials=creds)
 
 
 def exponential_backoff_sleep(retry_count):
-    # Exponential backoff with jitter (see Google best practices)
-    # e.g., sleep random time between 0 and 2^retry_count seconds (max 64 seconds)
+    """
+    Exponential backoff function with jitter. Sleeps a random time between 0 and 2 2^retry_count seconds (max 64 seconds).
+
+    Function is called if per-minute Google API call limits are reached.
+    """
     max_sleep = min(2**retry_count, 64)
     sleep_time = random.uniform(0, max_sleep)
     print(f"Rate limited. Sleeping for {sleep_time:.2f} seconds before retry...")
@@ -89,7 +92,7 @@ def create_share_link(item):
     return link
 
 
-def traverse_and_create(folder_id, parent_path, metadata_rows, drive_id=None):
+def get_metadata(folder_id, parent_path, metadata_rows, drive_id=None):
     contents = get_folder_contents(folder_id, drive_id=drive_id)
     for item in contents:
         item_path = os.path.join(parent_path, item["name"])
@@ -97,7 +100,7 @@ def traverse_and_create(folder_id, parent_path, metadata_rows, drive_id=None):
         item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
-            traverse_and_create(item["id"], item_path, metadata_rows, drive_id=drive_id)
+            get_metadata(item["id"], item_path, metadata_rows, drive_id=drive_id)
 
 
 def write_csv(metadata_rows, csv_file_path):
@@ -143,9 +146,7 @@ if __name__ == "__main__":
     metadata_rows = []
     print("Processing Google Drive structure. This may take a while for large trees...")
     try:
-        traverse_and_create(
-            root_folder_id, root_folder_name, metadata_rows, root_drive_id
-        )
+        get_metadata(root_folder_id, root_folder_name, metadata_rows, root_drive_id)
         write_csv(metadata_rows, csv_path)
     except Exception as e:
         print(f"Aborted due to error: {e}")
