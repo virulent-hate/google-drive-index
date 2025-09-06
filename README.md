@@ -1,6 +1,6 @@
-# dropbox-directory
+# google-drive-directory
 
-Scripts to create a directory of Virulent Hate's Dropbox team folder with sharable links.
+Scripts to create a directory of Virulent Hate's Google Drive folders with sharable links.
 
 **Author:** Jake Gibson, Virulent Hate Project Manager
 
@@ -21,5 +21,5 @@ Scripts to create a directory of Virulent Hate's Dropbox team folder with sharab
 2. Create a new virtual environment using Python 3.13.2.
 3. Install the required packages listed in the `requirements.txt` file found in the repository's root directory.
 4. Duplicate the example environment file `.env.example` and **rename it `.env`**.
-    1. Go to the [Dropbox Developers site](https://www.dropbox.com/developers/apps), create an app, and [generate a personal Access Token](https://dropbox.tech/developers/generate-an-access-token-for-your-own-account). Replace the `DROPBOX_ACCESS_TOKEN` variable in the `.env` file.
+    1. Write instructions for setting Google Drive scopes.
 5. Execute the desired script using the newly created virtual environment as the interpreter.
