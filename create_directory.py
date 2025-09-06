@@ -20,9 +20,10 @@ service = build("drive", "v3", credentials=creds)
 
 def exponential_backoff_sleep(retry_count):
     """
-    Exponential backoff function with jitter. Sleeps a random time between 0 and 2 2^retry_count seconds (max 64 seconds).
+    Exponential backoff function with jitter. Sleeps a random time between 0 and 2^retry_count seconds (max 64 seconds). Function is called if per-minute Google API call limits are reached.
 
-    Function is called if per-minute Google API call limits are reached.
+    parameters:
+      - retry_count (int): number of failed attempts at API calls. Sleep time increase with number of attempts (until 64 seconds).
     """
     max_sleep = min(2**retry_count, 64)
     sleep_time = random.uniform(0, max_sleep)
@@ -30,9 +31,23 @@ def exponential_backoff_sleep(retry_count):
     time.sleep(sleep_time)
 
 
-def get_folder_contents(folder_id, drive_id=None, max_retries=7):
+def get_folder_contents(folder_id, shared_drive_id=None, max_retries=7):
+    """
+    Lists all items in Google Drive folder.
+
+    parameters:
+      - folder_id (str): ID of Google Drive folder for creating directory
+      - shared_drive_id (str): if folder is located in Google Shared Drive, the ID of that drive must be provided.
+      -max_retries (int; default 7): max number of retries after failed API calls.
+
+    returns:
+      - items (list): list of item dictionaries containing metadata for each file and folder in root.
+    """
+    # Initialize empty variables
     items = []
     page_token = None
+
+    # Call Google Drive API and list files and folders within root folder
     while True:
         for attempt in range(max_retries):
             try:
@@ -44,12 +59,10 @@ def get_folder_contents(folder_id, drive_id=None, max_retries=7):
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True,
                 )
-                if drive_id:
-                    call = call  # Google API handles driveId in search with q and folder_id, but for 'root' traversal you may need to specify
                 results = call.execute()
                 break
             except HttpError as e:
-                if e.resp.status == 429:
+                if e.resp.status == 429:  # Error code for API rate limit
                     exponential_backoff_sleep(attempt)
                     continue
                 else:
@@ -60,6 +73,7 @@ def get_folder_contents(folder_id, drive_id=None, max_retries=7):
                 f"Exceeded maximum retries for folder {folder_id} (rate limit)."
             )
 
+        # For each file, extract metadata, store in dictionary, and add to items list
         files = results.get("files", [])
         for f in files:
             is_folder = f["mimeType"] == "application/vnd.google-apps.folder"
@@ -78,6 +92,7 @@ def get_folder_contents(folder_id, drive_id=None, max_retries=7):
                     "last_modified_date": f.get("modifiedTime", ""),
                 }
             )
+        # Page token indicates if more items in folder (on following page)
         page_token = results.get("nextPageToken", None)
         if not page_token:
             break
@@ -85,6 +100,15 @@ def get_folder_contents(folder_id, drive_id=None, max_retries=7):
 
 
 def create_share_link(item):
+    """
+    Creates a shareable link to each file or folder using Google Drive's standard link format.
+
+    parameters:
+      - item (dict): item containing (at minimum) "is_folder" (bool) and a Google Drive ID.
+
+    returns:
+      - link (str): URL for Google Drive file/folder
+    """
     if item["is_folder"]:
         link = f"https://drive.google.com/drive/folders/{item['id']}?usp=drivesdk"
     else:
@@ -92,15 +116,20 @@ def create_share_link(item):
     return link
 
 
-def get_metadata(folder_id, parent_path, metadata_rows, drive_id=None):
-    contents = get_folder_contents(folder_id, drive_id=drive_id)
+def get_metadata(folder_id, parent_path, metadata_rows, shared_drive_id=None):
+    """
+    Top-level function, calling on get_folder_contents to get
+    """
+    contents = get_folder_contents(folder_id, shared_drive_id=shared_drive_id)
     for item in contents:
         item_path = os.path.join(parent_path, item["name"])
         item["path"] = item_path
         item["link"] = create_share_link(item)
         metadata_rows.append(item)
         if item.get("is_folder", False):
-            get_metadata(item["id"], item_path, metadata_rows, drive_id=drive_id)
+            get_metadata(
+                item["id"], item_path, metadata_rows, shared_drive_id=shared_drive_id
+            )
 
 
 def write_csv(metadata_rows, csv_file_path):
