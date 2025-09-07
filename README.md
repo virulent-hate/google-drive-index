@@ -33,3 +33,18 @@ Python script creating an index of files and folders in a Google Drive directory
     - ID: `1nLfEtbSrX4zS2OkcuZeOJovKs-GGWkYv`
 7. Execute `create_index.py` using the newly created virtual environment as the interpreter.
     - Indexes will be saved to an `indexes/` directory (which is included in the `.gitignore` file to prevent metadata from being exposed to GitHub)
+
+## Data Dictionary
+See [REST Resource: files documentation](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) for information about Google Drive file fields.
+
+| CSV Field Name     | Type      | Description                                       | API Field Name      |
+|--------------------|-----------|---------------------------------------------------|---------------------|
+| name               | str       | name of the file                                  | `file.name`         |
+| path               | str       | path from root folder to file (created by script) | N/A                 |
+| id                 | str       | ID of the file                                    | `file.id`           |
+| link               | URL       | link for opening file in Google Drive             | `file.webViewLink`  |
+| type               | str       | file/folder type                                  | `file.mimeType`     |
+| is_folder          | bool      | calculated by script using `type`                 | N/A                 |
+| owner              | str       | owner of file (not populated for shared drives)   | `file.owners`       |
+| created_date       | date_time | Timestamp of file's creation                      | `file.createdTime`  |
+| last_modified_date | date_time | Timestamp of file's last modification             | `file.modifiedTime` |
