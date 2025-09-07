@@ -45,6 +45,7 @@ See [REST Resource: files documentation](https://developers.google.com/workspace
 | link               | URL       | link for opening file in Google Drive             | `file.webViewLink`  |
 | type               | str       | file/folder type                                  | `file.mimeType`     |
 | is_folder          | bool      | calculated by script using `type`                 | N/A                 |
+| size_kb            | float     | size of file in kilobytes (calculated by script)  | `file.size`         |
 | owner              | str       | owner of file (not populated for shared drives)   | `file.owners`       |
 | created_date       | date_time | timestamp of file's creation                      | `file.createdTime`  |
 | last_modified_date | date_time | timestamp of file's last modification             | `file.modifiedTime` |
