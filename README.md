@@ -1,8 +1,8 @@
-# google-drive-directory
+# google-drive-index
 
-Scripts to create a directory of Virulent Hate's Google Drive folders with sharable links.
+Python script creating an index of files and folders in a Google Drive directory using the Google Drive API.
 
-**Author:** Jake Gibson, Virulent Hate Project Manager
+**Author:** Jake Gibson, [Virulent Hate](https://virulenthate.org/) Project Manager
 
 **Institution:** University of Michigan
 
@@ -21,5 +21,13 @@ Scripts to create a directory of Virulent Hate's Google Drive folders with shara
 2. Create a new virtual environment using Python 3.13.2.
 3. Install the required packages listed in the `requirements.txt` file found in the repository's root directory.
 4. Duplicate the example environment file `.env.example` and **rename it `.env`**.
-    1. Write instructions for setting Google Drive scopes.
-5. Execute the desired script using the newly created virtual environment as the interpreter.
+5. Follow instructions from [Google Drive API Python quickstart](https://developers.google.com/workspace/drive/api/quickstart/python).
+    1. Create Google Cloud Project and enable [Google Drive API](https://console.cloud.google.com/flows/enableapi?apiid=drive.googleapis.com).
+    2. Configure [OAuth consent](https://console.cloud.google.com/auth/branding).
+    3. Create [client credentials](https://console.cloud.google.com/auth/clients), downloading as `credentias.json`.
+    4. Run `quickstart.py` (included in this repository) to authenticate device (authentication saved as `token.json`).
+6. Adjust variables in `.env` file to desired Google Drive folder.
+    - The Google Drive folder ID is embedded in the sharable link. In the URL, the ID is the long string characters after "folders/"
+    - `https://drive.google.com/drive/folders/**1nLfEtbSrX4zS2OkcuZeOJovKs-GGWkYv**`
+7. Execute `create_index.py` using the newly created virtual environment as the interpreter.
+    1. Indexes will be saved for a `indexes/` directory (which is included in the `.gitignore` file to prevent metadata from being exposed to GitHub)
