@@ -46,5 +46,5 @@ See [REST Resource: files documentation](https://developers.google.com/workspace
 | type               | str       | file/folder type                                  | `file.mimeType`     |
 | is_folder          | bool      | calculated by script using `type`                 | N/A                 |
 | owner              | str       | owner of file (not populated for shared drives)   | `file.owners`       |
-| created_date       | date_time | Timestamp of file's creation                      | `file.createdTime`  |
-| last_modified_date | date_time | Timestamp of file's last modification             | `file.modifiedTime` |
+| created_date       | date_time | timestamp of file's creation                      | `file.createdTime`  |
+| last_modified_date | date_time | timestamp of file's last modification             | `file.modifiedTime` |
