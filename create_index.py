@@ -54,7 +54,7 @@ def get_folder_metadata(folder_id, max_retries=7):
     Lists all items in Google Drive folder.
 
     parameters:
-      - folder_id (str): ID of Google Drive folder for creating directory
+      - folder_id (str): ID of Google Drive folder for creating index.
       -max_retries (int; default 7): max number of retries after failed API calls.
 
     returns:
@@ -170,11 +170,11 @@ if __name__ == "__main__":
     # Import and initialize variables
     root_folder_id = os.getenv("ROOT_FOLDER_ID")  # adjust in .env file
     root_folder_name = os.getenv("ROOT_FOLDER_NAME")  # adjust in .env file
-    csv_path = os.path.join("directories", f"{root_folder_name}_directory.csv")
+    csv_path = os.path.join("indexes", f"{root_folder_name}_index.csv")
     metadata_rows = []
 
     print(
-        f"\nProcessing Google Drive structure. This may take a while for large trees...\n"
+        f"\nProcessing files in Google Drive folder. This may take a while for large trees...\n"
     )
 
     try:
@@ -183,6 +183,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nAborted due to error: {e}\n")
     else:
-        print(
-            f"\nProcess complete. Directory structure at {root_folder_name}, metadata saved to {csv_path}.\n"
-        )
+        print(f"\nProcess complete. Index of files {root_folder_name} to {csv_path}.\n")
