@@ -31,24 +31,6 @@ def exponential_backoff_sleep(retry_count):
     time.sleep(sleep_time)
 
 
-def create_share_link(id, is_folder):
-    """
-    Creates a shareable link to each file or folder using Google Drive's standard link format.
-
-    parameters:
-      - id (str): Google Drive ID of file or folder.
-      - is_folder (bool)
-
-    returns:
-      - link (str): URL for Google Drive file/folder
-    """
-    if is_folder:
-        link = f"https://drive.google.com/drive/folders/{id}?usp=drivesdk"
-    else:
-        link = f"https://drive.google.com/file/d/{id}?usp=drivesdk"
-    return link
-
-
 def get_folder_metadata(folder_id, max_retries=7):
     """
     Lists all items in Google Drive folder.
@@ -71,7 +53,7 @@ def get_folder_metadata(folder_id, max_retries=7):
                 call = service.files().list(
                     q=f"'{folder_id}' in parents and trashed=false",
                     pageSize=1000,
-                    fields="nextPageToken, files(id, name, mimeType, size, owners, createdTime, modifiedTime)",
+                    fields="nextPageToken, files(id, name, mimeType, size, owners, webViewLink, createdTime, modifiedTime)",
                     pageToken=page_token,
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True,
@@ -97,12 +79,12 @@ def get_folder_metadata(folder_id, max_retries=7):
             size = int(f["size"]) if "size" in f else 0
             size_kb = round(size / 1024, 2) if not is_folder else 0
             owner = f.get("owners", [{}])[0].get("displayName", "")
-            link = create_share_link(f["id"], is_folder)
+            # link = create_share_link(f["id"], is_folder)
             items.append(
                 {
                     "id": f["id"],
                     "name": f["name"],
-                    "link": link,
+                    "link": f["webViewLink"],
                     "type": f["mimeType"],
                     "is_folder": is_folder,
                     "size_kb": size_kb,
