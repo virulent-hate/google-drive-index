@@ -79,7 +79,6 @@ def get_folder_metadata(folder_id, max_retries=7):
             size = int(f["size"]) if "size" in f else 0
             size_kb = round(size / 1024, 2) if not is_folder else 0
             owner = f.get("owners", [{}])[0].get("displayName", "")
-            # link = create_share_link(f["id"], is_folder)
             items.append(
                 {
                     "id": f["id"],
