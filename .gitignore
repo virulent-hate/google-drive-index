@@ -216,5 +216,5 @@ __marimo__/
 credentials.json
 token.json
 
-# Ignore directories created by script
-directories/
+# Ignore indexes created by script
+indexes/
