@@ -31,8 +31,8 @@ Python script creating an index of files and folders in a Google Drive directory
         - Script will prompt user to allow access to Google Drive Account and create a local `token.json` file verifying authentication.
 6. Adjust variables in `.env` file to desired Google Drive folder.
     - Google Drive folder IDs are embedded in sharable links. In the URL, the ID is the long string characters after `folders/`.
-        - Link: `https://drive.google.com/drive/folders/1nLfEtbSrX4zS2OkcuZeOJovKs-GGWkYv`
-        - ID: `1nLfEtbSrX4zS2OkcuZeOJovKs-GGWkYv`
+        - Example Link: `https://drive.google.com/drive/folders/1nLfEtbSrX4zS2OkcuZeOJovKs-GGWkYv`
+        - Example ID: `1nLfEtbSrX4zS2OkcuZeOJovKs-GGWkYv`
 7. Execute `create_index.py` using the newly created virtual environment as the interpreter.
     - Indexes will be saved to an `indexes/` directory (which is included in the `.gitignore` file to prevent metadata from being exposed to GitHub)
 
