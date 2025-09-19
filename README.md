@@ -10,6 +10,8 @@ Python script creating an index of files and folders in a Google Drive directory
 
 **Contact:** jacobgib@umich.edu
 
+**Recommended Citation:** Gibson, Jake. 2025. _Google Drive Index [Software]_. GitHub. <https://github.com/virulent-hate/google-drive-index> 
+
 ## Development Information
 - **Python Version:** 3.13.2
 - **Dependency tracking**
@@ -49,3 +51,6 @@ See [REST Resource: files documentation](https://developers.google.com/workspace
 | owner              | str       | owner of file (not populated for shared drives)   | `file.owners`       |
 | created_date       | date_time | timestamp of file's creation                      | `file.createdTime`  |
 | last_modified_date | date_time | timestamp of file's last modification             | `file.modifiedTime` |
+
+## License
+This work is openly licensed under [The MIT License] (https://mit-license.org/). Copyright Virulent Hate, 2025.
