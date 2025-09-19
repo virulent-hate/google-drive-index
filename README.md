@@ -53,4 +53,4 @@ See [REST Resource: files documentation](https://developers.google.com/workspace
 | last_modified_date | date_time | timestamp of file's last modification             | `file.modifiedTime` |
 
 ## License
-This work is openly licensed under [The MIT License] (https://mit-license.org/). Copyright Virulent Hate, 2025.
+This work is openly licensed under [The MIT License](https://mit-license.org/). Copyright Virulent Hate, 2025.
