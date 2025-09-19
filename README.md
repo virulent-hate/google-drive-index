@@ -1,4 +1,4 @@
-# google-drive-index
+# Google Drive Index
 
 Python script creating an index of files and folders in a Google Drive directory using the Google Drive API.
 
